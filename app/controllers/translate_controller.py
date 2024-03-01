@@ -18,3 +18,17 @@ class TranslateController:
             error_message = str(e)
             traceback_info = traceback.format_exc()
             raise HTTPException(status_code=500, detail={'error': error_message, 'traceback': traceback_info})
+        
+    async def train_model(self):
+        try:
+            translator = GPTLanguageTranslator()
+
+            train_model = await translator.train_model()
+            if train_model['error']:
+                return JSONResponse(content={'message': train_model['error']}, status_code=500)
+            return JSONResponse(content={'message': 'Model is trained successfully'}, status_code=200)
+             
+        except Exception as e: 
+            error_message = str(e)
+            traceback_info = traceback.format_exc()
+            raise HTTPException(status_code=500, detail={'error': error_message, 'traceback': traceback_info})

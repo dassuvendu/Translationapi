@@ -1,5 +1,7 @@
 venv
 .env
+chromadb
+app/data
 
 __pycache__
 app/__pycache__
