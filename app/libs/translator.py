@@ -32,6 +32,8 @@ class GPTLanguageTranslator:
 
         self.chroma_client = chromadb.PersistentClient(path="./chromadb", settings=Settings(anonymized_telemetry=False))
 
+        self.collection_name = "translations"
+
     def translate_text(self, text, target_language):
         vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings())
         retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
@@ -66,22 +68,15 @@ class GPTLanguageTranslator:
         return response
 
     async def train_model(self):
-        url = "https://aitranslationhub.co/api/translation-records"  # Replace with your API endpoint URL
-
-        # Make the GET request
+        url = "https://aitranslationhub.co/api/translations" 
         response = requests.get(url)
-        print(response)
-        # Check if the request was successful (status code 200)
         if response.status_code == 200:
-            # Parse and work with the response data (assuming it's JSON)
             data = response.json()
-            print(data)
         else:
-            # Handle errors
             return {'status_code': response.status_code, 'error': response.text}
             
 
-        text_data = "\n".join(f"Input Text: {entry['input_text']}\nTranslated Text: {entry['translated_text']}\n" for entry in data['results'])
+        text_data = "\n".join(f"Text: {entry['input_text']}\nTranslated Text: {entry['translated_text']}\n" for entry in data['results'])
         data_folder = os.path.join(os.path.dirname(__file__), '..', 'data')
         if not os.path.exists(data_folder):
             os.makedirs(data_folder)
@@ -89,18 +84,22 @@ class GPTLanguageTranslator:
         file_name = "output.txt" 
         file_path = os.path.join(data_folder, file_name)
 
-        # Store the text in a text file
-        with open(file_path, "w") as file:
+        with open(file_path, "w", encoding="utf-8") as file:
             file.write(text_data)
 
-        loader = TextLoader(file_path)
+        loader = TextLoader(file_path, encoding='utf-8')
         docs = loader.load()
 
-        print('Splitting...')
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         splits = text_splitter.split_documents(docs)
 
-        print('Embedding...')
-        vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(), client= self.chroma_client)
+        coll = self.chroma_client.get_or_create_collection(self.collection_name)
+        result = coll.get()
+        if result:
+            self.chroma_client.delete_collection(self.collection_name)
+
+        vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(), client=self.chroma_client, collection_name=self.collection_name)
+
+        return {'message': 'Model is trained successfully'}
         
        

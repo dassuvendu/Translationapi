@@ -24,7 +24,7 @@ class TranslateController:
             translator = GPTLanguageTranslator()
 
             train_model = await translator.train_model()
-            if train_model['error']:
+            if 'error' in train_model and train_model['error']:
                 return JSONResponse(content={'message': train_model['error']}, status_code=500)
             return JSONResponse(content={'message': 'Model is trained successfully'}, status_code=200)
              
