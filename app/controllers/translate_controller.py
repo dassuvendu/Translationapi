@@ -25,7 +25,7 @@ class TranslateController:
 
             train_model = await translator.train_model()
             if 'error' in train_model and train_model['error']:
-                return JSONResponse(content={'message': train_model['error']}, status_code=500)
+                return JSONResponse(content={'message': train_model['error']}, status_code=train_model['status_code'])
             return JSONResponse(content={'message': 'Model is trained successfully'}, status_code=200)
              
         except Exception as e: 
