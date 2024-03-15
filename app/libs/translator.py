@@ -35,37 +35,54 @@ class GPTLanguageTranslator:
         self.collection_name = "translations"
 
     def translate_text(self, text, target_language):
-        vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings())
-        retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
-    
-        template = """I want you to act as a language translator. 
-        I will provide you a text and a target language. 
-        You will translate the text into the target language. 
-        You will return only the translated text.
-
-        You can use this context to improve your translation.
-        Context: {context}
-        Text: {text}
-        Target Language: {target_language}
-        Translated Text: """
-
-        prompt = ChatPromptTemplate.from_template(template)
-
-        model = ChatOpenAI(model_name="gpt-3.5-turbo-0125", temperature=0)
-
-        def format_docs(docs):
-            return "\n\n".join(doc.page_content for doc in docs)
+        chunks = []
+        max_chunk_size = 4000
+        chunks = []
+        current_chunk = ""
+        for word in text.split():
+            if len(current_chunk) + len(word) <= max_chunk_size:
+                current_chunk += (word + " ")
+            else:
+                chunks.append(current_chunk.strip())
+                current_chunk = word + " "
+        if current_chunk:
+            chunks.append(current_chunk.strip())
         
-        chain = (
-            { "target_language": RunnableLambda(lambda x: target_language), "text": RunnablePassthrough(), "context": retriever | format_docs}
-            | prompt
-            | model
-            | StrOutputParser()
-        )
+        final_text = ''
+        for chunk in chunks:
+            text = chunk
+            vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings())
+            retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
+        
+            template = """I want you to act as a language translator. 
+            I will provide you a text and a target language. 
+            You will translate the text into the target language. 
+            You will return only the translated text.
 
-        response = chain.invoke(text)
+            You can use this context to improve your translation.
+            Context: {context}
+            Text: {text}
+            Target Language: {target_language}
+            Translated Text: """
 
-        return response
+            prompt = ChatPromptTemplate.from_template(template)
+
+            model = ChatOpenAI(model_name="gpt-4-0125-preview", temperature=0, max_tokens=4096)
+
+            def format_docs(docs):
+                return "\n\n".join(doc.page_content for doc in docs)
+            
+            chain = (
+                { "target_language": RunnableLambda(lambda x: target_language), "text": RunnablePassthrough(), "context": retriever | format_docs}
+                | prompt
+                | model
+                | StrOutputParser()
+            )
+
+            response = chain.invoke(text)
+            final_text += response
+
+        return final_text
 
     async def train_model(self):
         url = "https://aitranslationhub.co/api/translations" 
