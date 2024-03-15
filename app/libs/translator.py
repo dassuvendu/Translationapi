@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
@@ -67,7 +66,7 @@ class GPTLanguageTranslator:
 
             prompt = ChatPromptTemplate.from_template(template)
 
-            model = ChatOpenAI(model_name="gpt-4-0125-preview", temperature=0, max_tokens=4096)
+            model = ChatOpenAI(model_name="gpt-3.5-turbo-0125", temperature=0, max_tokens=4096)
 
             def format_docs(docs):
                 return "\n\n".join(doc.page_content for doc in docs)
