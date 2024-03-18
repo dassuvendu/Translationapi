@@ -38,15 +38,15 @@ class GPTLanguageTranslator:
         max_chunk_size = 4000
         chunks = []
         current_chunk = ""
-        for word in text.split():
-            if len(current_chunk) + len(word) <= max_chunk_size:
-                current_chunk += (word + " ")
+        for line in text.split('\n'):
+            if len(current_chunk) + len(line) <= max_chunk_size:
+                current_chunk += (line + "\n")
             else:
                 chunks.append(current_chunk.strip())
-                current_chunk = word + " "
+                current_chunk = line + "\n"
         if current_chunk:
             chunks.append(current_chunk.strip())
-        
+
         final_text = ''
         for chunk in chunks:
             text = chunk
@@ -56,7 +56,7 @@ class GPTLanguageTranslator:
             template = """I want you to act as a language translator. 
             I will provide you a text and a target language. 
             You will translate the text into the target language. 
-            You will return only the translated text.
+            You will return only the translated text in structured format.
 
             You can use this context to improve your translation.
             Context: {context}
