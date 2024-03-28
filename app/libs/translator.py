@@ -109,10 +109,10 @@ class GPTLanguageTranslator:
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         splits = text_splitter.split_documents(docs)
 
-        coll = self.chroma_client.get_or_create_collection(self.collection_name)
-        result = coll.get()
-        if result:
-            self.chroma_client.delete_collection(self.collection_name)
+        # coll = self.chroma_client.get_or_create_collection(self.collection_name)
+        # result = coll.get()
+        # if result:
+        #     self.chroma_client.delete_collection(self.collection_name)
 
         vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(model="text-embedding-3-large"), client=self.chroma_client, collection_name=self.collection_name)
 
