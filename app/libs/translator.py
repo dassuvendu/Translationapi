@@ -114,7 +114,7 @@ class GPTLanguageTranslator:
         if result:
             self.chroma_client.delete_collection(self.collection_name)
 
-        vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(), client=self.chroma_client, collection_name=self.collection_name)
+        vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(model="text-embedding-3-large"), client=self.chroma_client, collection_name=self.collection_name)
 
         return {'message': 'Model is trained successfully'}
         
