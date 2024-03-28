@@ -50,13 +50,13 @@ class GPTLanguageTranslator:
         final_text = ''
         for chunk in chunks:
             text = chunk
-            vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings())
+            vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings(model="text-embedding-3-large"))
             retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
         
             template = """I want you to act as a language translator. 
             I will provide you a text and a target language. 
             You will translate the text into the target language. 
-            You will return only the translated text in structured format.
+            You will return only the translated text.
 
             You can use this context to improve your translation.
             Context: {context}
