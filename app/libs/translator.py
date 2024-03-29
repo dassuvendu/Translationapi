@@ -48,17 +48,18 @@ class GPTLanguageTranslator:
             chunks.append(current_chunk.strip())
 
         final_text = ''
+        final_source = ''
         for chunk in chunks:
             text = chunk
-            vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings(model="text-embedding-3-large"))
+            vectorstore = Chroma(client=self.chroma_client, embedding_function=OpenAIEmbeddings(model="text-embedding-3-large"), collection_name=self.collection_name)
             retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
-        
+            
             template = """I want you to act as a language translator. 
             I will provide you a text and a target language. 
             You will translate the text into the target language. 
             You will return only the translated text.
 
-            You can use this context to improve your translation.
+            I will provide you a helpful context of translated text so use it properly before translating any text.
             Context: {context}
             Text: {text}
             Target Language: {target_language}
@@ -71,6 +72,10 @@ class GPTLanguageTranslator:
             def format_docs(docs):
                 return "\n\n".join(doc.page_content for doc in docs)
             
+            docs = vectorstore.similarity_search(text)
+            source = format_docs(docs)
+            final_source += source
+            
             chain = (
                 { "target_language": RunnableLambda(lambda x: target_language), "text": RunnablePassthrough(), "context": retriever | format_docs}
                 | prompt
@@ -81,18 +86,25 @@ class GPTLanguageTranslator:
             response = chain.invoke(text)
             final_text += response
 
-        return final_text
+        return final_text, final_source
 
     async def train_model(self):
         url = "https://aitranslationhub.co/api/translations" 
         response = requests.get(url)
         if response.status_code == 200:
-            data = response.json()
+            try:
+                data = response.json()
+                translation_results = data.get('results', [])
+                if not translation_results:
+                    return {'error': 'No translation results found in API response'}
+            except Exception as e:
+                return {'error': f'Error parsing API response JSON: {str(e)}'}
         else:
             return {'status_code': response.status_code, 'error': response.text}
-            
 
-        text_data = "\n".join(f"Text: {entry['input_text']}\nTranslated Text: {entry['translated_text']}\n" for entry in data['results'])
+        text_data = "\n".join(f"Text: {entry['input_text']}\nTranslated Text: {entry['translated_text']}\n" for entry in translation_results)
+        print(text_data)
+
         data_folder = os.path.join(os.path.dirname(__file__), '..', 'data')
         if not os.path.exists(data_folder):
             os.makedirs(data_folder)
@@ -100,8 +112,11 @@ class GPTLanguageTranslator:
         file_name = "output.txt" 
         file_path = os.path.join(data_folder, file_name)
 
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(text_data)
+        try:
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(text_data)
+        except Exception as e:
+            return {'error': f'Error writing to file: {str(e)}'}
 
         loader = TextLoader(file_path, encoding='utf-8')
         docs = loader.load()
@@ -109,13 +124,6 @@ class GPTLanguageTranslator:
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         splits = text_splitter.split_documents(docs)
 
-        # coll = self.chroma_client.get_or_create_collection(self.collection_name)
-        # result = coll.get()
-        # if result:
-        #     self.chroma_client.delete_collection(self.collection_name)
-
         vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings(model="text-embedding-3-large"), client=self.chroma_client, collection_name=self.collection_name)
 
         return {'message': 'Model is trained successfully'}
-        
-       

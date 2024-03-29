@@ -11,9 +11,9 @@ class TranslateController:
         try:
             translator = GPTLanguageTranslator()
 
-            translated_text = translator.translate_text(text, target_language)
+            translated_text, source = translator.translate_text(text, target_language)
 
-            return JSONResponse(content={'message': 'Text is translated successfully', 'target_language': target_language, 'text': text, 'translated_text': translated_text}, status_code=200)
+            return JSONResponse(content={'message': 'Text is translated successfully', 'target_language': target_language, 'text': text, 'translated_text': translated_text, 'source': source}, status_code=200)
         except Exception as e: 
             error_message = str(e)
             traceback_info = traceback.format_exc()
