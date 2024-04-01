@@ -91,6 +91,7 @@ class GPTLanguageTranslator:
     async def train_model(self):
         url = "https://aitranslationhub.co/api/translations" 
         response = requests.get(url)
+        
         if response.status_code == 200:
             try:
                 data = response.json()
@@ -100,10 +101,9 @@ class GPTLanguageTranslator:
             except Exception as e:
                 return {'error': f'Error parsing API response JSON: {str(e)}'}
         else:
-            return {'status_code': response.status_code, 'error': response.text}
+            return {'status_code': response.status_code, 'error': 'No new translations found to train'}
 
         text_data = "\n".join(f"Text: {entry['input_text']}\nTranslated Text: {entry['translated_text']}\n" for entry in translation_results)
-        print(text_data)
 
         data_folder = os.path.join(os.path.dirname(__file__), '..', 'data')
         if not os.path.exists(data_folder):
