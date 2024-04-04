@@ -56,10 +56,10 @@ class GPTLanguageTranslator:
             
             template = """I want you to act as a language translator. 
             I will provide you a text and a target language. 
+            I will provide you a helpful context of translated text then return only that translated text without modifying it any way.
             You will translate the text into the target language. 
-            You will return only the translated text.
+            You will return only the translated text if you do not find any context.
 
-            I will provide you a helpful context of translated text so use it properly before translating any text.
             Context: {context}
             Text: {text}
             Target Language: {target_language}
