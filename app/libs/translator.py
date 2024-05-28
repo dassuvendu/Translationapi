@@ -55,10 +55,9 @@ class GPTLanguageTranslator:
             retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, 'fetch_k': 50})
             
             template = """I want you to act as a language translator. 
-            I will provide you a text and a target language. 
-            I will provide you a helpful context of translated text then return only that translated text without modifying it any way.
-            You will translate the text into the target language. 
-            You will return only the translated text if you do not find any context.
+            I will provide you a text and a target language and a context. 
+            If you find any context of the text then return the translated text directly from the context without modifying it.
+            If no context is not provided then translate the text into target language.
 
             Context: {context}
             Text: {text}
@@ -67,7 +66,7 @@ class GPTLanguageTranslator:
 
             prompt = ChatPromptTemplate.from_template(template)
 
-            model = ChatOpenAI(model_name="gpt-3.5-turbo-0125", temperature=0, max_tokens=4096)
+            model = ChatOpenAI(model_name="gpt-4o", temperature=0, max_tokens=4096)
 
             def format_docs(docs):
                 return "\n\n".join(doc.page_content for doc in docs)
